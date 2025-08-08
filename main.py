@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
+import math
 
 # hu tao's butterfly :)
 butterfly_mask_img = Image.open("butterfly_mask.png").convert("RGBA")
@@ -45,8 +46,8 @@ draw = ImageDraw.Draw(base_img)
 
 # add text
 font = ImageFont.truetype("HanyiSentyPagoda Regular.ttf", size=190)
-draw.text((950, 200), "胡", (255, 255, 255, 255), font)
-draw.text((950, 400), "桃", (255, 255, 255, 255), font)
+draw.text((950, 200), "胡", (247, 219, 219, 255), font)
+draw.text((950, 400), "桃", (247, 219, 219, 255), font)
 
 # nudge the left butterfly to the left a bit more and make it smaller
 left_butterfly_img = base_img.crop((50, 400, 290, 610)).resize(
@@ -66,9 +67,57 @@ right_butterfly_img = base_img.crop((950, 1050, 1280, 1300)).resize(
 )
 draw.rectangle(((950, 1050), (1280, 1300)), fill=base_img.getpixel((0, 0)))
 base_img.paste(right_butterfly_img, (1050, 1180))
+# move the butterfly on the bottom left a bit
+draw.rectangle(((200, 1270), (270, 1340)), fill=base_img.getpixel((0, 0)))
+
+# color thingy to test out black background
+def color_dist(c1, c2):
+    return (c1[0]-c2[0])**2 + (c1[1]-c2[1])**2 + (c1[2]-c2[2])**2
+
+px = base_img.load()
+bg_color = base_img.getpixel((0, 0))
+for y in range(base_img.height):
+    for x in range(base_img.width):
+        dist = color_dist(px[x, y], bg_color) # type: ignore
+        
+        if dist <= 500: # type: ignore
+            norm = min(dist / 500, 1.0)
+            dim_factor = math.exp(-2 * (1 - norm))
+            r, g, b, a = px[x, y] # type: ignore
+            # change this so that the dimming amount is proportional to how close it is to the bg_color
+            px[x, y] = ( # type: ignore
+                int(max(0, min(255, r * dim_factor))),
+                int(max(0, min(255, g * dim_factor))),
+                int(max(0, min(255, g * dim_factor))),
+                a
+            )
+        else:
+            r, g, b, a = px[x, y] # type: ignore
+            # Shift colors with clamping to 0–255
+            r = max(0, min(255, r-30))
+            b = max(0, min(255, b+10))
+            px[x, y] = (r, g, b, a) # type: ignore
+
+# silhouette shadow
+shadow_img = silhouette_img.copy()
+shadow_color = (220, 28, 28)
+blend_ratio = 0.5
+px = shadow_img.load()
+for y in range(shadow_img.height):
+    for x in range(shadow_img.width):
+        r, g, b, a = px[x, y]  # type: ignore
+        if a > 0:
+            # color blending for shadow to give sort of a glassy feel?
+            nr = int(r * (1 - blend_ratio) + shadow_color[0] * blend_ratio)
+            ng = int(g * (1 - blend_ratio) + shadow_color[1] * blend_ratio)
+            nb = int(b * (1 - blend_ratio) + shadow_color[2] * blend_ratio)
+            px[x, y] = (nr, ng, nb, int(a * 0.8))  # type: ignore
+# add shadow
+base_img.paste(shadow_img, (10, 10), shadow_img)
 
 # add silhouette
 base_img.paste(silhouette_img, (0, 0), silhouette_img)
+
 # save result
 base_img.save("result.png")
 base_img.show("Hu Tao Poster")
