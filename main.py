@@ -44,11 +44,6 @@ base_img = base_img.resize(
 # the drawer thing
 draw = ImageDraw.Draw(base_img)
 
-# add text
-font = ImageFont.truetype("HanyiSentyPagoda Regular.ttf", size=190)
-draw.text((950, 200), "胡", (247, 219, 219, 255), font)
-draw.text((950, 400), "桃", (247, 219, 219, 255), font)
-
 # nudge the left butterfly to the left a bit more and make it smaller
 left_butterfly_img = base_img.crop((50, 400, 290, 610)).resize(
     (120, 115), Image.Resampling.LANCZOS
@@ -60,14 +55,8 @@ right_cloud_img = base_img.crop((720, 650, 1280, 1000)).resize(
     (392, 245), Image.Resampling.LANCZOS
 )
 draw.rectangle(((720, 650), (1280, 1000)), fill=base_img.getpixel((0, 0)))
-base_img.paste(right_cloud_img, (910, 650))
-# make the right butterfly a bit smaller
-right_butterfly_img = base_img.crop((950, 1050, 1280, 1300)).resize(
-    (231, 175), Image.Resampling.LANCZOS
-)
-draw.rectangle(((950, 1050), (1280, 1300)), fill=base_img.getpixel((0, 0)))
-base_img.paste(right_butterfly_img, (1050, 1180))
-# move the butterfly on the bottom left a bit
+base_img.paste(right_cloud_img, (910, 670))
+# hide the butterfly on the bottom left
 draw.rectangle(((200, 1270), (270, 1340)), fill=base_img.getpixel((0, 0)))
 
 # color thingy to test out black background
@@ -98,10 +87,21 @@ for y in range(base_img.height):
             b = max(0, min(255, b+10))
             px[x, y] = (r, g, b, a) # type: ignore
 
+# text shadow
+font = ImageFont.truetype("HanyiSentyPagoda Regular.ttf", size=186)
+draw.text((980, 220), "胡", (212,61,71,50), font)
+draw.text((980, 410), "桃", (212,61,71,50), font)
+# text
+font = ImageFont.truetype("HanyiSentyPagoda Regular.ttf", size=180)
+draw.text((980, 220), "胡", (212,61,71), font)
+draw.text((980, 410), "桃", (212,61,71), font)
+
 # silhouette shadow
-shadow_img = silhouette_img.copy()
-shadow_color = (220, 28, 28)
-blend_ratio = 0.5
+shadow_img = silhouette_img.resize(
+    (silhouette_img.width + 20, silhouette_img.height + 20), resample=Image.Resampling.LANCZOS
+)
+shadow_color = (138, 28, 28)
+blend_ratio = 1
 px = shadow_img.load()
 for y in range(shadow_img.height):
     for x in range(shadow_img.width):
@@ -113,7 +113,7 @@ for y in range(shadow_img.height):
             nb = int(b * (1 - blend_ratio) + shadow_color[2] * blend_ratio)
             px[x, y] = (nr, ng, nb, int(a * 0.8))  # type: ignore
 # add shadow
-base_img.paste(shadow_img, (10, 10), shadow_img)
+base_img.paste(shadow_img, (0, 0), shadow_img)
 
 # add silhouette
 base_img.paste(silhouette_img, (0, 0), silhouette_img)
